@@ -71,7 +71,7 @@ class Preprocessor_aug(Dataset):
 
 class Preprocessor_aug2(Dataset):
     def __init__(self, dataset, root=None, transform=None, selected_list = None):
-        super(Preprocessor_aug, self).__init__()
+        super(Preprocessor_aug2, self).__init__()
         self.dataset = dataset
         self.root = root
         self.transform = transform

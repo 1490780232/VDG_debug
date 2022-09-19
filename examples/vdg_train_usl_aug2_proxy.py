@@ -28,7 +28,7 @@ from spcl.utils.data import IterLoader
 from spcl.utils.data import transforms as T
 from spcl.utils.data.sampler import RandomMultipleGallerySampler
 # from spcl.utils.data.preprocessor import Preprocessor
-from spcl.utils.data.preprocessor import Preprocessor,Preprocessor_aug
+from spcl.utils.data.preprocessor import Preprocessor,Preprocessor_aug, Preprocessor_aug2
 from spcl.utils.logging import Logger
 from spcl.utils.serialization import load_checkpoint, save_checkpoint, copy_state_dict
 from spcl.utils.faiss_rerank import compute_jaccard_distance
@@ -36,7 +36,7 @@ from spcl.utils.faiss_rerank import compute_jaccard_distance
 start_epoch = best_mAP = 0
 
 def get_data(name, data_dir):
-    root = osp.join(data_dir, name)
+    root = osp.join(data_dir, "market1501")
     dataset = datasets.create(name, root)
     return dataset
 
@@ -62,7 +62,7 @@ def get_train_loader(args, dataset, height, width, batch_size, workers,
     else:
         sampler = None
     train_loader = IterLoader(
-                DataLoader(Preprocessor_aug(train_set, root=dataset.images_dir, transform=train_transformer),
+                DataLoader(Preprocessor_aug2(train_set, root=dataset.images_dir, transform=train_transformer),
                             batch_size=batch_size, num_workers=workers, sampler=sampler,
                             shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)
     return train_loader
@@ -91,7 +91,7 @@ def get_train_augloader(args, dataset, height, width, batch_size, workers,
     else:
         sampler = None
     train_loader = IterLoader(
-                DataLoader(Preprocessor_aug(train_set, root=dataset.images_dir, transform=train_transformer, selected_list=selected_set),
+                DataLoader(Preprocessor_aug2(train_set, root=dataset.images_dir, transform=train_transformer, selected_list=selected_set),
                             batch_size=batch_size, num_workers=workers, sampler=sampler,
                             shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)
     return train_loader
@@ -363,8 +363,6 @@ def main_worker(args):
             #     pseudo_labeled_dataset.append((fname,len(cluster_R_indep)+outliers,cid))
             #     pseudo_labels[i] = len(cluster_R_indep)+outliers
             #     outliers+=1
-
-
         @torch.no_grad()
         def generate_cluster_features(labels, features,views):
             centers = collections.defaultdict(list)
@@ -428,7 +426,7 @@ def main_worker(args):
         for vv in np.unique(views):
             percam_tempV.append(perview_memory[vv].detach().clone())
         percam_tempV= torch.cat(percam_tempV, dim=0).cuda()
-        del cluster_loader, features
+        # del cluster_loader, features
 
         view_centroids = []
         view_centroid_labels = []

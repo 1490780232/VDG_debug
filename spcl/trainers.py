@@ -205,7 +205,7 @@ class VDGTrainer_USL(object):
 
 class VDGTrainer_USL_view(object):
     def __init__(self, encoder, memory):
-        super(VDGTrainer_USL, self).__init__()
+        super(VDGTrainer_USL_view, self).__init__()
         self.encoder = encoder
         self.memory = memory
         self.ce = nn.CrossEntropyLoss()
@@ -232,7 +232,7 @@ class VDGTrainer_USL_view(object):
             f_out= self._forward(inputs)
             loss_memory = self.memory(f_out, pids)
             loss_view=0
-            if epoch>=30:
+            if epoch>=0:
                 for cc in torch.unique(views):
                 # print(cc)
                     inds = torch.nonzero(views == cc).squeeze(-1)
