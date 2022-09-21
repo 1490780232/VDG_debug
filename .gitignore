@@ -4,7 +4,9 @@ market_train_fpn_final/
 *~
 logs/*
 scripts/*
-
+logs2/
+*.json
+*.pt
 # temporary files which can be created if a process still has a handle open of a deleted file
 .fuse_hidden*
 

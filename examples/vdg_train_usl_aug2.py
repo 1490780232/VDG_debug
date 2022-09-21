@@ -140,7 +140,7 @@ def create_model(args):
     model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0)
     # use CUDA
     model.cuda()
-    weights = torch.load("/home/lzy/VDG/iteration_200000.pt")['state_dict']
+    weights = torch.load("/media/sdb/lzy/VDG/VDG_debug/iteration_200000.pt")['state_dict']
     # print(type(weights['state_dict'])) #.keys()
     body_dict = collections.OrderedDict()
     for key in weights.keys():
@@ -206,7 +206,7 @@ def main_worker(args):
 
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/home/lzy/VDG/market_train2")
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/media/sdb/lzy/VDG/VDG_debug/market_train_fpn_final")
 
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
@@ -258,9 +258,9 @@ def main_worker(args):
                 # # aug_meanfeature = torch.stack(f_augfeatures, dim=0).mean(0)
                 # features[f] = torch.cat([features[f], aug_meanfeature])
         # json.
-        f = open("/home/lzy/VDG/SpCL/logs/"+str(epoch)+".json","w")
-        json.dump(select_augs_2, f)
-        f.close()
+        # f = open("/home/lzy/VDG/SpCL/logs/"+str(epoch)+".json","w")
+        # json.dump(select_augs_2, f)
+        # f.close()
         features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
         rerank_dist = compute_jaccard_distance(features, k1=args.k1, k2=args.k2)
         # del features

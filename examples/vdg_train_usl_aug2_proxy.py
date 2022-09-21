@@ -140,7 +140,7 @@ def create_model(args):
     model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0)
     # use CUDA
     model.cuda()
-    weights = torch.load("/home/lzy/VDG/iteration_200000.pt")['state_dict']
+    weights = torch.load("/media/sdb/lzy/VDG/VDG_debug/iteration_200000.pt")['state_dict']
     # print(type(weights['state_dict'])) #.keys()
     body_dict = collections.OrderedDict()
     for key in weights.keys():
@@ -160,6 +160,7 @@ def create_model(args):
     model = nn.DataParallel(model)
     # model.load_state_dict(torch.load("/home/lzy/VDG/SpCL/logs/spcl_usl/baseline_0.5/model_best.pth.tar")["state_dict"])
     return model
+
 
 def main():
     args = parser.parse_args()
@@ -206,7 +207,7 @@ def main_worker(args):
 
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/home/lzy/VDG/market_train2")
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/media/sdb/lzy/VDG/VDG_debug/market_train_fpn_final")
 
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
@@ -261,7 +262,7 @@ def main_worker(args):
                 # # aug_meanfeature = torch.stack(f_augfeatures, dim=0).mean(0)
                 # features[f] = torch.cat([features[f], aug_meanfeature])
         # json.
-        f = open("/home/lzy/VDG/SpCL/logs/"+str(epoch)+".json","w")
+        f = open("./"+str(epoch)+".json","w")
         json.dump(select_augs_2, f)
         f.close()
         features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
@@ -334,7 +335,6 @@ def main_worker(args):
         cluster_R_indep_noins = [iou for iou, num in zip(cluster_R_indep, sorted(cluster_img_num.keys())) if cluster_img_num[num]>1]
         if (epoch==0):
             indep_thres = np.sort(cluster_R_indep_noins)[min(len(cluster_R_indep_noins)-1,np.round(len(cluster_R_indep_noins)*0.9).astype('int'))]
-
         pseudo_labeled_dataset = []
         outliers = 0
         # for i, label in enumerate(pseudo_labels):
@@ -418,7 +418,7 @@ def main_worker(args):
         # ]
         # centroids = torch.stack(centroids, dim=0)
     
-        centroids, perview_memory, concate_intra_class = generate_cluster_features(pseudo_labels, features,views)
+        centroids, perview_memory, concate_intra_class = generate_cluster_features(pseudo_labels, features.detach(),views)
         
         concate_intra_class = torch.cat(concate_intra_class)
         concate_intra_class = concate_intra_class.cuda()
@@ -427,7 +427,6 @@ def main_worker(args):
             percam_tempV.append(perview_memory[vv].detach().clone())
         percam_tempV= torch.cat(percam_tempV, dim=0).cuda()
         # del cluster_loader, features
-
         view_centroids = []
         view_centroid_labels = []
 
@@ -463,11 +462,8 @@ def main_worker(args):
         index2label = np.fromiter(index2label.values(), dtype=float)
         # print('==> Statistics for epoch {}: {} clusters, {} un-clustered instances, R_indep threshold is {}'
         #             .format(epoch, (index2label>1).sum(), (index2label==1).sum(), 1-indep_thres))
-
         # memory.num_samples = len(pseudo_labels[pseudo_labels>-1])
-
         memory.features = F.normalize(centroids, dim=1).cuda()
-
         memory.labels =  torch.Tensor(pseudo_labels[pseudo_labels>-1]).long()
 
         # model.module.classifier = nn.Linear(2048, centroids.shape[0], bias=False).cuda()

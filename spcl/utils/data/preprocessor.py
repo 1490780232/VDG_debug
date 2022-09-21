@@ -55,7 +55,7 @@ class Preprocessor_aug(Dataset):
             fpath = osp.join(self.root, fname)
         if fpath in self.select_list.keys():
             aug_path = random.choice(self.select_list[fpath])
-            aug_path = os.path.join("/home/lzy/VDG/SpCL/market_train_fpn_final", aug_path)
+            aug_path = os.path.join("/media/sdb/lzy/VDG/VDG_debug/market_train_fpn_final", aug_path)
         else:
             aug_path = fpath
         img = Image.open(fpath).convert('RGB')
@@ -90,7 +90,7 @@ class Preprocessor_aug2(Dataset):
             fpath = osp.join(self.root, fname)
         if fpath in self.select_list.keys():
             aug_path = random.choice(self.select_list[fpath])
-            aug_path = os.path.join("/home/lzy/VDG/SpCL/market_train_fpn_final", aug_path)
+            aug_path = os.path.join("/media/sdb/lzy/VDG/VDG_debug/market_train_fpn_final", aug_path)
             view_aug = int(aug_path[-5:-4])
         else:
             aug_path = fpath 

@@ -232,7 +232,8 @@ class VDGTrainer_USL_view(object):
             f_out= self._forward(inputs)
             loss_memory = self.memory(f_out, pids)
             loss_view=0
-            if epoch>=0:
+            loss = loss_memory 
+            if epoch>=30:
                 for cc in torch.unique(views):
                 # print(cc)
                     inds = torch.nonzero(views == cc).squeeze(-1)
@@ -255,8 +256,7 @@ class VDGTrainer_USL_view(object):
                                 F.log_softmax(concated_input.unsqueeze(0), dim=1) * concated_target.unsqueeze(
                             0)).sum()
                     loss_view += 0.1 * associate_loss / len(percam_feat)
-            loss = loss_memory + loss_view
-            
+                    loss+=loss_view
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
