@@ -218,7 +218,9 @@ def main_worker(args):
     print("==> Initialize instance features in the hybrid memory")
     cluster_loader = get_cluster_loader(dataset, args.height, args.width,
                                     args.batch_size, args.workers, testset=sorted(dataset.train))
-    
+    selection_th = args.reliability
+    lambda_v = args.lambda_view
+    start_epoch = args.start_epoch
     # features, _ = extract_features(model, cluster_loader, print_freq=50)
     # features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
     # # memory.features = F.normalize(features, dim=1).cuda()
@@ -234,7 +236,7 @@ def main_worker(args):
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=0.1)
 
     # Trainer
-    trainer = VDGTrainer_USL_view(model, memory) #SpCLTrainer_USL(model, memory)
+    trainer = VDGTrainer_USL_view(model, memory, lambda_v, start_epoch) #SpCLTrainer_USL(model, memory)
     mAP = evaluator.evaluate(test_loader, dataset.query, dataset.gallery, cmc_flag=True)
     for epoch in range(args.epochs):
         # Calculate distance
@@ -262,7 +264,7 @@ def main_worker(args):
                     aug_feature = features_aug[f.split("/")[-1][:-4]+"_view"+str(key)+".jpg"]
                     scores = torch.matmul(features[f], aug_feature.T)
                     select_augs_2[f].append(f.split("/")[-1][:-4]+"_view"+str(key)+".jpg"+str(scores))
-                    if scores>0.9:
+                    if scores>selection_th:
                         select_augs[f].append(f.split("/")[-1][:-4]+"_view"+str(key)+".jpg")
                     f_augfeatures.append(features_aug[f.split("/")[-1][:-4]+"_view"+str(key)+".jpg"])
                 # # f_augfeatures.append(features[f])
@@ -564,6 +566,12 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--momentum', type=float, default=0.2,
                         help="update momentum for the hybrid memory")
+    parser.add_argument('--reliability', type=float, default=0.8,
+                        help="sample selection threshold")
+    parser.add_argument('--lambda_view', type=float, default=0.1,
+                        help="view-aware contrastive loss weights")
+    parser.add_argument('--start_epoch', type=int, default=0, help="viewpoint-aware contrastive loss start epoch")
+                        
     # optimizer
     parser.add_argument('--lr', type=float, default=0.00035,
                         help="learning rate")
