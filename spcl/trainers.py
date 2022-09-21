@@ -248,6 +248,8 @@ class VDGTrainer_USL_view(object):
         self.view_proxy = None
         self.view_classes = None
         self.view_label_mapper = None 
+        self.views_unique = None
+
     def train(self, epoch, data_loader, optimizer, print_freq=10, train_iters=400, percam_tempV = [],  concate_intra_class = []):
         self.encoder.train()
         batch_time = AverageMeter()
@@ -274,13 +276,14 @@ class VDGTrainer_USL_view(object):
             outputs /= self.temp
             loss_memory = F.cross_entropy(outputs[:bs], pids[:bs])+self.criterion2(outputs[bs:], pids[bs:])
             loss_view=0
-            if epoch>=0:
+            if epoch>=30:
                 concate_intra_class = torch.cat(self.view_classes)
                 concate_intra_class = concate_intra_class.cuda()
                 percam_tempV = []
                 for vv in np.unique(views):
                     percam_tempV.append(self.view_proxy[vv].detach().clone())
                 percam_tempV= torch.cat(percam_tempV, dim=0).cuda()
+
                 for cc in torch.unique(views):
                     inds = torch.nonzero(views == cc).squeeze(-1)
                     percam_targets = pids[inds]

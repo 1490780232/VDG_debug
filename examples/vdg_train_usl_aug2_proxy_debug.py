@@ -228,8 +228,7 @@ def main_worker(args):
 
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/home/lzy/VDG/market_train2")
-
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/home/lzy/VDG/SpCL/market_train_fpn_final")
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
     optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
@@ -427,7 +426,7 @@ def main_worker(args):
                     proto_memory = init_intra_id_feat[vv]
                     proto_memory = proto_memory.cuda()
                     perview_memory.append(proto_memory.detach())
-            return centers, perview_memory, concate_intra_class
+            return centers, perview_memory, concate_intra_class, view_class_mapper
 
         centroids = collections.defaultdict(list)
     

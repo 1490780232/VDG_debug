@@ -219,22 +219,19 @@ def main_worker(args):
     print("==> Initialize instance features in the hybrid memory")
     cluster_loader = get_cluster_loader(dataset, args.height, args.width,
                                     args.batch_size, args.workers, testset=sorted(dataset.train))
-    
+
     # features, _ = extract_features(model, cluster_loader, print_freq=50)
     # features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
     # # memory.features = F.normalize(features, dim=1).cuda()
     # # del cluster_loader, features
     # del features
-
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/home/lzy/VDG/market_train2")
-
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/home/lzy/VDG/SpCL/examples/data/market_train_fpn_final")
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
     optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=0.1)
-
     # Trainer
     trainer = VDGTrainer_USL_view(model, memory) #SpCLTrainer_USL(model, memory)
     mAP = evaluator.evaluate(test_loader, dataset.query, dataset.gallery, cmc_flag=True)
@@ -242,7 +239,7 @@ def main_worker(args):
         # Calculate distance
         print('==> Create pseudo labels for unlabeled data with self-paced policy')
         features_aug, _ ,_ = extract_aug_features(model, aug_loader,print_freq=50)
-
+        print("market_train_fpn_final")
         # features = memory.features.clone()
         features, _, views = extract_features_view(model, cluster_loader, print_freq=50)
         views = [views[f] for f, _, _,_ in sorted(dataset.train)]

@@ -116,7 +116,7 @@ class Preprocessor_aug2(Dataset):
             fpath = osp.join(self.root, fname)
         if fpath in self.select_list.keys():
             aug_path = random.choice(self.select_list[fpath])
-            aug_path = os.path.join("/home/lzy/VDG/SpCL/market_train_fpn_final", aug_path)
+            aug_path = os.path.join("/home/lzy/VDG/SpCL/examples/data/market_train_fpn_final", aug_path)
             view_aug = int(aug_path[-5:-4])
         else:
             aug_path = fpath 
