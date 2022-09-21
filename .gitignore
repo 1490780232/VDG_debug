@@ -4,10 +4,16 @@ market_train_fpn_final/
 *~
 logs/*
 scripts/*
+<<<<<<< HEAD
 pretrained/
+=======
+logs2/
+*.json
+*.pt
+>>>>>>> 49e2613e519dd811e317b51d3231e2acbc4d5470
 # temporary files which can be created if a process still has a handle open of a deleted file
 .fuse_hidden*
-
+pretrained/
 # KDE directory preferences
 .directory
 

@@ -161,7 +161,7 @@ def create_model(args):
     model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0)
     # use CUDA
     model.cuda()
-    weights = torch.load("/home/lzy/VDG/iteration_200000.pt")['state_dict']
+    weights = torch.load("./pretrained/iteration_200000.pt")['state_dict']
     # print(type(weights['state_dict'])) #.keys()
     body_dict = collections.OrderedDict()
     for key in weights.keys():

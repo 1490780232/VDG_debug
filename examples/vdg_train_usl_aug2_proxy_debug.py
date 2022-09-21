@@ -161,7 +161,7 @@ def create_model(args):
     model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0)
     # use CUDA
     model.cuda()
-    weights = torch.load("/home/lzy/VDG/iteration_200000.pt")['state_dict']
+    weights = torch.load("./pretrained/iteration_200000.pt")['state_dict']
     # print(type(weights['state_dict'])) #.keys()
     body_dict = collections.OrderedDict()
     for key in weights.keys():
@@ -210,7 +210,6 @@ def main_worker(args):
 
     # Create model
     model = create_model(args)
-
     # Create hybrid memory
     # memory = HybridMemory(model.module.num_features, len(dataset.train),
     #                         temp=args.temp, momentum=args.momentum).cuda()
@@ -228,7 +227,7 @@ def main_worker(args):
 
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/home/lzy/VDG/SpCL/market_train_fpn_final")
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"./examples/data/market_train_fpn_final")
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
     optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
@@ -282,7 +281,7 @@ def main_worker(args):
                 # # aug_meanfeature = torch.stack(f_augfeatures, dim=0).mean(0)
                 # features[f] = torch.cat([features[f], aug_meanfeature])
         # json.
-        f = open("/home/lzy/VDG/SpCL/logs/"+str(epoch)+".json","w")
+        f = open("./logs/"+str(epoch)+".json","w")
         json.dump(select_augs_2, f)
         f.close()
         features = torch.cat([features[f].unsqueeze(0) for f, _, _ ,_ in sorted(dataset.train)], 0)
@@ -443,7 +442,7 @@ def main_worker(args):
         trainer.view_proxy = perview_memory
         trainer.view_classes = concate_intra_class
         trainer.view_label_mapper = view_class_mapper
-
+        trainer.views_label = views
         concate_intra_class = torch.cat(concate_intra_class)
         concate_intra_class = concate_intra_class.cuda()
         percam_tempV = []

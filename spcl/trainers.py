@@ -248,8 +248,7 @@ class VDGTrainer_USL_view(object):
         self.view_proxy = None
         self.view_classes = None
         self.view_label_mapper = None 
-        self.views_unique = None
-
+        self.views_label = None
     def train(self, epoch, data_loader, optimizer, print_freq=10, train_iters=400, percam_tempV = [],  concate_intra_class = []):
         self.encoder.train()
         batch_time = AverageMeter()
@@ -280,10 +279,10 @@ class VDGTrainer_USL_view(object):
                 concate_intra_class = torch.cat(self.view_classes)
                 concate_intra_class = concate_intra_class.cuda()
                 percam_tempV = []
-                for vv in np.unique(views):
+                for vv in np.unique(self.views_label):
                     percam_tempV.append(self.view_proxy[vv].detach().clone())
                 percam_tempV= torch.cat(percam_tempV, dim=0).cuda()
-
+                # print(percam_tempV.shape, concate_intra_class.shape)
                 for cc in torch.unique(views):
                     inds = torch.nonzero(views == cc).squeeze(-1)
                     percam_targets = pids[inds]
@@ -305,13 +304,14 @@ class VDGTrainer_USL_view(object):
                         associate_loss += -1 * (
                                 F.log_softmax(concated_input.unsqueeze(0), dim=1) * concated_target.unsqueeze(
                             0)).sum()
-                    loss_view += 0.1 * associate_loss / len(percam_feat)
+                    loss_view += 0.5 * associate_loss / len(percam_feat)
             loss = loss_memory + loss_view
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             self._updata_features(f_out.detach()[:bs] , pids[:bs]) #
             self._updata_features(f_out.detach()[:bs] , pids[:bs]) #
+            self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             losses.update(loss.item())
             # print log
             batch_time.update(time.time() - end)
@@ -341,3 +341,10 @@ class VDGTrainer_USL_view(object):
             self.features[y] = momentum * self.features[y] + (1. - momentum) * x
             self.features[y] /= self.features[y].norm()
 
+
+    def _update_proxy(self, inputs, targets, views):
+        momentum = torch.Tensor([self.momentum]).to(inputs.device)
+        for x, y,v in zip(inputs, targets, views):
+            self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
+            self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
+            # print(self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]],"after")

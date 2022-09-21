@@ -40,6 +40,7 @@ class Preprocessor2(Dataset):
         self.dataset = dataset
         self.root = root
         self.transform = transform
+        self.id_tranform = {0:0, 1:1, 2:2, 3:1}   #,4:2,5:3,6:3,7:4
 
     def __len__(self):
         return len(self.dataset)
@@ -58,7 +59,7 @@ class Preprocessor2(Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        return img, fname, pid,viewid, camid, index
+        return img, fname, pid, self.id_tranform[viewid], camid, index
 
 class Preprocessor_aug(Dataset):
     def __init__(self, dataset, root=None, transform=None, selected_list = None):
@@ -81,7 +82,7 @@ class Preprocessor_aug(Dataset):
             fpath = osp.join(self.root, fname)
         if fpath in self.select_list.keys():
             aug_path = random.choice(self.select_list[fpath])
-            aug_path = os.path.join("/home/lzy/VDG/SpCL/market_train_fpn_final", aug_path)
+            aug_path = os.path.join("./examples/data/market_train_fpn_final", aug_path)
         else:
             aug_path = fpath
         img = Image.open(fpath).convert('RGB')
@@ -116,7 +117,7 @@ class Preprocessor_aug2(Dataset):
             fpath = osp.join(self.root, fname)
         if fpath in self.select_list.keys():
             aug_path = random.choice(self.select_list[fpath])
-            aug_path = os.path.join("/home/lzy/VDG/SpCL/examples/data/market_train_fpn_final", aug_path)
+            aug_path = os.path.join("./examples/data/market_train_fpn_final", aug_path)
             view_aug = int(aug_path[-5:-4])
         else:
             aug_path = fpath 
