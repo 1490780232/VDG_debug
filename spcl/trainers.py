@@ -202,19 +202,57 @@ class VDGTrainer_USL(object):
         return self.encoder(inputs)
 
 
+class CrossEntropyLabelSmooth(nn.Module):
+    """Cross entropy loss with label smoothing regularizer.
+
+    Reference:
+    Szegedy et al. Rethinking the Inception Architecture for Computer Vision. CVPR 2016.
+    Equation: y = (1 - epsilon) * y + epsilon / K.
+
+    Args:
+        num_classes (int): number of classes.
+        epsilon (float): weight.
+    """
+
+    def __init__(self, num_classes, epsilon=0.1, use_gpu=True):
+        super(CrossEntropyLabelSmooth, self).__init__()
+        self.num_classes = num_classes
+        self.epsilon = epsilon
+        self.use_gpu = use_gpu
+        self.logsoftmax = nn.LogSoftmax(dim=1)
+
+    def forward(self, inputs, targets):
+        """
+        Args:
+            inputs: prediction matrix (before softmax) with shape (batch_size, num_classes)
+            targets: ground truth labels with shape (num_classes)
+        """
+        log_probs = self.logsoftmax(inputs)
+        targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).data.cpu(), 1)
+        if self.use_gpu: targets = targets.cuda()
+        targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
+        loss = (- targets * log_probs).mean(0).sum()
+        return loss
 
 class VDGTrainer_USL_view(object):
     def __init__(self, encoder, memory):
         super(VDGTrainer_USL_view, self).__init__()
         self.encoder = encoder
         self.memory = memory
+        self.features = None
+        self.momentum = 0.2
+        self.labels =None
+        self.temp = 0.05
         self.ce = nn.CrossEntropyLoss()
+        self.criterion2 = CrossEntropyLabelSmooth(600)
+        self.view_proxy = None
+        self.view_classes = None
+        self.view_label_mapper = None 
+        self.views_label = None
     def train(self, epoch, data_loader, optimizer, print_freq=10, train_iters=400, percam_tempV = [],  concate_intra_class = []):
         self.encoder.train()
-
         batch_time = AverageMeter()
         data_time = AverageMeter()
-
         losses = AverageMeter()
 
         end = time.time()
@@ -230,15 +268,26 @@ class VDGTrainer_USL_view(object):
             views = torch.cat(views, dim=0)
             # forward
             f_out= self._forward(inputs)
-            loss_memory = self.memory(f_out, pids)
+            # loss_memory = self.memory(f_out, pids)
+            bs = int(f_out.shape[0]/2)
+            inputs = F.normalize(f_out, dim=1).cuda()
+            outputs = inputs.mm(self.features.t())
+            outputs /= self.temp
+            loss_memory = F.cross_entropy(outputs[:bs], pids[:bs])+self.criterion2(outputs[bs:], pids[bs:])
             loss_view=0
-            loss = loss_memory 
-            if epoch>=30:
+            if epoch>=0:
+                concate_intra_class = torch.cat(self.view_classes)
+                concate_intra_class = concate_intra_class.cuda()
+                percam_tempV = []
+                for vv in np.unique(self.views_label):
+                    percam_tempV.append(self.view_proxy[vv].detach().clone())
+                percam_tempV= torch.cat(percam_tempV, dim=0).cuda()
+                # print(percam_tempV.shape, concate_intra_class.shape)
                 for cc in torch.unique(views):
-                # print(cc)
                     inds = torch.nonzero(views == cc).squeeze(-1)
                     percam_targets = pids[inds]
                     # print(percam_targets)
+                    # print(cc)
                     percam_feat = f_out[inds]
                     associate_loss = 0
                     target_inputs = torch.matmul(F.normalize(percam_feat), F.normalize(percam_tempV.t().clone()))
@@ -246,7 +295,7 @@ class VDGTrainer_USL_view(object):
                     target_inputs /= 0.07 
                     for k in range(len(percam_feat)):
                         ori_asso_ind = torch.nonzero(concate_intra_class == percam_targets[k]).squeeze(-1)
-                        temp_sims[k, ori_asso_ind] = -10000.0  # mask out positive
+                        temp_sims[k, ori_asso_ind] = -10000.0  #mask out positive
                         sel_ind = torch.sort(temp_sims[k])[1][-50:]
                         concated_input = torch.cat((target_inputs[k, ori_asso_ind], target_inputs[k, sel_ind]), dim=0)
                         concated_target = torch.zeros((len(concated_input)), dtype=concated_input.dtype).to(
@@ -255,13 +304,14 @@ class VDGTrainer_USL_view(object):
                         associate_loss += -1 * (
                                 F.log_softmax(concated_input.unsqueeze(0), dim=1) * concated_target.unsqueeze(
                             0)).sum()
-                    loss_view += 0.1 * associate_loss / len(percam_feat)
-                    loss+=loss_view
+                    loss_view += 0.5 * associate_loss / len(percam_feat)
+            loss = loss_memory + loss_view
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            self.memory.updata_features(f_out.detach()[:bs] , pids[:bs]) #
-            self.memory.updata_features(f_out.detach()[:bs] , pids[:bs]) #
+            self._updata_features(f_out.detach()[:bs] , pids[:bs]) #
+            self._updata_features(f_out.detach()[:bs] , pids[:bs]) #
+            self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             losses.update(loss.item())
             # print log
             batch_time.update(time.time() - end)
@@ -275,7 +325,6 @@ class VDGTrainer_USL_view(object):
                               batch_time.val, batch_time.avg,
                               data_time.val, data_time.avg,
                               losses.val, losses.avg))
-
     def _parse_data(self, inputs):
         imgs, _, pids, views, indexes = inputs
         return [imgs[0].cuda(), imgs[1].cuda()], pids.cuda(), [views[0].cuda(),views[1].cuda()],indexes.cuda()
@@ -283,3 +332,19 @@ class VDGTrainer_USL_view(object):
 
     def _forward(self, inputs):
         return self.encoder(inputs)
+
+    def _updata_features(self, inputs, targets):
+        momentum = torch.Tensor([self.momentum]).to(inputs.device)
+        # inputs = torch.mean(torch.stack(inputs, dim=0), dim=0)
+        inputs = F.normalize(inputs, dim=1).cuda()
+        for x, y in zip(inputs, targets):
+            self.features[y] = momentum * self.features[y] + (1. - momentum) * x
+            self.features[y] /= self.features[y].norm()
+
+
+    def _update_proxy(self, inputs, targets, views):
+        momentum = torch.Tensor([self.momentum]).to(inputs.device)
+        for x, y,v in zip(inputs, targets, views):
+            self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
+            self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
+            # print(self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]],"after")

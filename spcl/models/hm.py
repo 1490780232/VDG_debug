@@ -206,8 +206,6 @@ class ClusterMemory(nn.Module, ABC):
             self.features[y] /= self.features[y].norm()
 
 
-
-
 class ClusterMemory2(nn.Module, ABC):
     def __init__(self, num_features, num_samples, temp=0.05, momentum=0.2, use_hard=False):
         super(ClusterMemory2, self).__init__()
@@ -232,9 +230,7 @@ class ClusterMemory2(nn.Module, ABC):
         outputs /= self.temp
         # loss = F.cross_entropy(outputs, targets)
         loss = F.cross_entropy(outputs[bs:], targets[bs:])+ self.criterion2(outputs[:bs], targets[:bs])
-        
         return loss
-    
     def updata_features(self, inputs, targets):
         momentum = torch.Tensor([self.momentum]).to(inputs.device)
         # inputs = torch.mean(torch.stack(inputs, dim=0), dim=0)

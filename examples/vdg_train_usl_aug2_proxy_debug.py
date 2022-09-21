@@ -161,7 +161,7 @@ def create_model(args):
     model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0)
     # use CUDA
     model.cuda()
-    weights = torch.load("/media/sdb/lzy/VDG/VDG_debug/iteration_200000.pt")['state_dict']
+    weights = torch.load("./pretrained/iteration_200000.pt")['state_dict']
     # print(type(weights['state_dict'])) #.keys()
     body_dict = collections.OrderedDict()
     for key in weights.keys():
@@ -181,7 +181,6 @@ def create_model(args):
     model = nn.DataParallel(model)
     # model.load_state_dict(torch.load("/home/lzy/VDG/SpCL/logs/spcl_usl/baseline_0.5/model_best.pth.tar")["state_dict"])
     return model
-
 
 def main():
     args = parser.parse_args()
@@ -211,7 +210,6 @@ def main_worker(args):
 
     # Create model
     model = create_model(args)
-
     # Create hybrid memory
     # memory = HybridMemory(model.module.num_features, len(dataset.train),
     #                         temp=args.temp, momentum=args.momentum).cuda()
@@ -229,8 +227,7 @@ def main_worker(args):
 
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"/media/sdb/lzy/VDG/market_train2")
-
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"./examples/data/market_train_fpn_final")
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
     optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
@@ -265,7 +262,7 @@ def main_worker(args):
                     aug_feature = features_aug[f.split("/")[-1][:-4]+"_view"+str(key)+".jpg"]
                     scores = torch.matmul(features[f], aug_feature.T)
                     select_augs_2[f].append(f.split("/")[-1][:-4]+"_view"+str(key)+".jpg"+str(scores))
-                    if scores>0.8:
+                    if scores>0.9:
                         select_augs[f].append(f.split("/")[-1][:-4]+"_view"+str(key)+".jpg")
                     f_augfeatures.append(features_aug[f.split("/")[-1][:-4]+"_view"+str(key)+".jpg"])
                 # # f_augfeatures.append(features[f])
@@ -284,7 +281,7 @@ def main_worker(args):
                 # # aug_meanfeature = torch.stack(f_augfeatures, dim=0).mean(0)
                 # features[f] = torch.cat([features[f], aug_meanfeature])
         # json.
-        f = open("./"+str(epoch)+".json","w")
+        f = open("./logs/"+str(epoch)+".json","w")
         json.dump(select_augs_2, f)
         f.close()
         features = torch.cat([features[f].unsqueeze(0) for f, _, _ ,_ in sorted(dataset.train)], 0)
@@ -354,6 +351,7 @@ def main_worker(args):
         cluster_R_indep_noins = [iou for iou, num in zip(cluster_R_indep, sorted(cluster_img_num.keys())) if cluster_img_num[num]>1]
         if (epoch==0):
             indep_thres = np.sort(cluster_R_indep_noins)[min(len(cluster_R_indep_noins)-1,np.round(len(cluster_R_indep_noins)*0.9).astype('int'))]
+
         pseudo_labeled_dataset = []
         outliers = 0
         # for i, label in enumerate(pseudo_labels):
@@ -395,9 +393,9 @@ def main_worker(args):
             ]
             centers = torch.stack(centers, dim=0)
             perview_memory = []
-            # memory_class_mapper = []
             concate_intra_class = []
             init_intra_id_feat=[]
+            view_class_mapper = []
             views = np.array(views)
             labels = np.array(labels)
             for vv in np.unique(views): #torch.unique(views): #
@@ -417,6 +415,9 @@ def main_worker(args):
                 percam_id_feature = percam_id_feature / np.linalg.norm(percam_id_feature, axis=1, keepdims=True)
                 init_intra_id_feat.append(torch.from_numpy(percam_id_feature))
                 concate_intra_class.append(torch.from_numpy(uniq_class))
+                cls_mapper = {int(uniq_class[j]): j for j in range(len(uniq_class))}
+                view_class_mapper.append(cls_mapper)
+
                 # cls_mapper = {int(uniq_class[j]): j for j in range(len(uniq_class))}
                 # memory_class_mapper.append(cls_mapper)  # from pseudo label to index under each camera
                 if len(init_intra_id_feat) > 0:
@@ -424,7 +425,7 @@ def main_worker(args):
                     proto_memory = init_intra_id_feat[vv]
                     proto_memory = proto_memory.cuda()
                     perview_memory.append(proto_memory.detach())
-            return centers, perview_memory, concate_intra_class
+            return centers, perview_memory, concate_intra_class, view_class_mapper
 
         centroids = collections.defaultdict(list)
     
@@ -437,8 +438,11 @@ def main_worker(args):
         ]
         centroids = torch.stack(centroids, dim=0)
     
-        centroids, perview_memory, concate_intra_class = generate_cluster_features(pseudo_labels, features.detach(),views)
-        
+        centroids, perview_memory, concate_intra_class, view_class_mapper = generate_cluster_features(pseudo_labels, features,views)
+        trainer.view_proxy = perview_memory
+        trainer.view_classes = concate_intra_class
+        trainer.view_label_mapper = view_class_mapper
+        trainer.views_label = views
         concate_intra_class = torch.cat(concate_intra_class)
         concate_intra_class = concate_intra_class.cuda()
         percam_tempV = []
@@ -448,6 +452,7 @@ def main_worker(args):
         # concate_intra_class = []
         # percam_tempV = []
         # del cluster_loader, features
+
         view_centroids = []
         view_centroid_labels = []
 
@@ -483,8 +488,11 @@ def main_worker(args):
         index2label = np.fromiter(index2label.values(), dtype=float)
         # print('==> Statistics for epoch {}: {} clusters, {} un-clustered instances, R_indep threshold is {}'
         #             .format(epoch, (index2label>1).sum(), (index2label==1).sum(), 1-indep_thres))
+
         # memory.num_samples = len(pseudo_labels[pseudo_labels>-1])
+
         memory.features = F.normalize(centroids, dim=1).cuda()
+
         memory.labels =  torch.Tensor(pseudo_labels[pseudo_labels>-1]).long()
         trainer.features = F.normalize(centroids, dim=1).cuda()
         trainer.labels =  torch.Tensor(pseudo_labels[pseudo_labels>-1]).long()

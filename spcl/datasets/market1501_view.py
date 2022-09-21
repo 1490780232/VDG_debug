@@ -47,7 +47,7 @@ class Market1501(BaseImageDataset):
         self.query = query
         self.gallery = gallery
 
-        self.num_train_pids, self.num_train_imgs, self.num_train_cams = self.get_imagedata_info(self.train)
+        self.num_train_pids, self.num_train_imgs, self.num_train_cams = self.get_imagedata_info_train(self.train)
         self.num_query_pids, self.num_query_imgs, self.num_query_cams = self.get_imagedata_info(self.query)
         self.num_gallery_pids, self.num_gallery_imgs, self.num_gallery_cams = self.get_imagedata_info(self.gallery)
 
@@ -108,5 +108,5 @@ class Market1501(BaseImageDataset):
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
             self.id_path[pid].append((img_path, pid, camid, self.view_to_id[self.view_point_id[img_path.split('/')[-1]]['orientation']]))
-            dataset.append((img_path, pid,  self.view_to_id[self.view_point_id[img_path.split('/')[-1]]['orientation']])) #camid,
+            dataset.append((img_path, pid,  self.view_to_id[self.view_point_id[img_path.split('/')[-1]]['orientation']], camid)) #
         return dataset
