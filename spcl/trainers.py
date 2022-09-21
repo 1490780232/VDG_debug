@@ -279,7 +279,6 @@ class VDGTrainer_USL_view(object):
             loss_memory = F.cross_entropy(outputs[:bs], pids[:bs])+self.criterion2(outputs[bs:], pids[bs:])
             loss_view=0
             if epoch>=self.start_epoch:
-                print("111")
                 concate_intra_class = torch.cat(self.view_classes)
                 concate_intra_class = concate_intra_class.cuda()
                 percam_tempV = []
