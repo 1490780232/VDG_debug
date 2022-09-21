@@ -395,9 +395,9 @@ def main_worker(args):
             ]
             centers = torch.stack(centers, dim=0)
             perview_memory = []
-            # memory_class_mapper = []
             concate_intra_class = []
             init_intra_id_feat=[]
+            view_class_mapper = []
             views = np.array(views)
             labels = np.array(labels)
             for vv in np.unique(views): #torch.unique(views): #
@@ -417,6 +417,9 @@ def main_worker(args):
                 percam_id_feature = percam_id_feature / np.linalg.norm(percam_id_feature, axis=1, keepdims=True)
                 init_intra_id_feat.append(torch.from_numpy(percam_id_feature))
                 concate_intra_class.append(torch.from_numpy(uniq_class))
+                cls_mapper = {int(uniq_class[j]): j for j in range(len(uniq_class))}
+                view_class_mapper.append(cls_mapper)
+
                 # cls_mapper = {int(uniq_class[j]): j for j in range(len(uniq_class))}
                 # memory_class_mapper.append(cls_mapper)  # from pseudo label to index under each camera
                 if len(init_intra_id_feat) > 0:
@@ -437,8 +440,11 @@ def main_worker(args):
         ]
         centroids = torch.stack(centroids, dim=0)
     
-        centroids, perview_memory, concate_intra_class = generate_cluster_features(pseudo_labels, features,views)
-        
+        centroids, perview_memory, concate_intra_class, view_class_mapper = generate_cluster_features(pseudo_labels, features,views)
+        trainer.view_proxy = perview_memory
+        trainer.view_classes = concate_intra_class
+        trainer.view_label_mapper = view_class_mapper
+
         concate_intra_class = torch.cat(concate_intra_class)
         concate_intra_class = concate_intra_class.cuda()
         percam_tempV = []
