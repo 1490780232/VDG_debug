@@ -8,7 +8,7 @@ from .veri import VeRi
 from .vehicleid import VehicleID
 from .vehiclex import VehicleX
 from .market1501_view import Market1501 as Market_view
-
+from .dukemtmcreid import DukeMTMCreID
 
 __factory = {
     'market1501': Market1501,
@@ -17,7 +17,8 @@ __factory = {
     'veri': VeRi,
     'vehicleid': VehicleID,
     'vehiclex': VehicleX,
-    'Market_view':Market_view
+    'Market_view':Market_view,
+    'DukeMTMCreID':DukeMTMCreID
 }
 
 

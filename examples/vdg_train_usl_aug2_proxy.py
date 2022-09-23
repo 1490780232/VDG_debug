@@ -481,7 +481,6 @@ def main_worker(args):
         index2label = np.fromiter(index2label.values(), dtype=float)
         # print('==> Statistics for epoch {}: {} clusters, {} un-clustered instances, R_indep threshold is {}'
         #             .format(epoch, (index2label>1).sum(), (index2label==1).sum(), 1-indep_thres))
-
         # memory.num_samples = len(pseudo_labels[pseudo_labels>-1])
 
         memory.features = F.normalize(centroids, dim=1).cuda()

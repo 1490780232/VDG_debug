@@ -36,7 +36,7 @@ from spcl.utils.faiss_rerank import compute_jaccard_distance
 start_epoch = best_mAP = 0
 
 def get_data(name, data_dir):
-    root = osp.join(data_dir, "market1501")
+    root = osp.join(data_dir, "market1501") #dukemtmcreid
     dataset = datasets.create(name, root)
     return dataset
 
@@ -161,7 +161,9 @@ def create_model(args):
     model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0)
     # use CUDA
     model.cuda()
-    weights = torch.load("./pretrained/iteration_200000.pt")['state_dict']
+
+
+    weights = torch.load("./pretrained/iteration_200000.pt")['state_dict'] #duke_
     # print(type(weights['state_dict'])) #.keys()
     body_dict = collections.OrderedDict()
     for key in weights.keys():
@@ -178,6 +180,7 @@ def create_model(args):
     body_key = list( body_dict.keys())
     for i in range(len(body_dict.keys())):
         model.state_dict()[model_key[i]].copy_(body_dict[body_key[i]])
+
     model = nn.DataParallel(model)
     # model.load_state_dict(torch.load("/home/lzy/VDG/SpCL/logs/spcl_usl/baseline_0.5/model_best.pth.tar")["state_dict"])
     return model
@@ -229,7 +232,7 @@ def main_worker(args):
 
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"./examples/data/market_train_fpn_final")
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"./examples/data/market_train_fpn_final") #"./examples/data/duke_train_fpn_view_features_final")#
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
     optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
@@ -515,7 +518,7 @@ def main_worker(args):
                     print_freq=args.print_freq, train_iters=len(train_loader),percam_tempV = percam_tempV,  concate_intra_class = concate_intra_class)
 
         if ((epoch+1)%args.eval_step==0 or (epoch==args.epochs-1)):
-            mAP = evaluator.evaluate(test_loader, dataset.query, dataset.gallery, cmc_flag=False)
+            mAP = evaluator.evaluate(test_loader, dataset.query, dataset.gallery, cmc_flag=True)[1]
             is_best = (mAP>best_mAP)   
             best_mAP = max(mAP, best_mAP)
             save_checkpoint({

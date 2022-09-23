@@ -96,8 +96,6 @@ def get_train_augloader(args, dataset, height, width, batch_size, workers,
                             batch_size=batch_size, num_workers=workers, sampler=sampler,
                             shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)
     return train_loader
-
-
 def get_test_loader(dataset, height, width, batch_size, workers, testset=None): 
     normalizer = T.Normalize(mean=[0.5, 0.5, 0.5],
                              std= [0.5, 0.5, 0.5])
