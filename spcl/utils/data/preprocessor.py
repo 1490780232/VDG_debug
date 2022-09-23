@@ -97,13 +97,14 @@ class Preprocessor_aug(Dataset):
 
 
 class Preprocessor_aug2(Dataset):
-    def __init__(self, dataset, root=None, transform=None, selected_list = None):
+    def __init__(self, dataset, root=None, transform=None, selected_list = None,aug_path = None):
         super(Preprocessor_aug2, self).__init__()
         self.dataset = dataset
         self.root = root
         self.transform = transform
         self.select_list = selected_list
         self.id_tranform = {0:0, 1:1, 2:2, 3:1}   #,4:2,5:3,6:3,7:4
+        self.aug_dir = aug_path
     def __len__(self):
         return len(self.dataset)
 
@@ -117,7 +118,7 @@ class Preprocessor_aug2(Dataset):
             fpath = osp.join(self.root, fname)
         if fpath in self.select_list.keys():
             aug_path = random.choice(self.select_list[fpath])
-            aug_path = os.path.join("./examples/data/market_train_fpn_final", aug_path) #duke_train_fpn_view_features_final
+            aug_path = os.path.join(self.aug_dir, aug_path)
             view_aug = int(aug_path[-5:-4])
         else:
             aug_path = fpath 

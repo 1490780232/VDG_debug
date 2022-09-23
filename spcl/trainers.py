@@ -312,10 +312,9 @@ class VDGTrainer_USL_view(object):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            self._updata_features(f_out.detach() , pids) #[:bs][:bs]
             # self._updata_features(f_out.detach()[:bs] , pids[:bs]) #
-            # self._updata_features(f_out.detach()[:bs] , pids[:bs]) #
-            self._updata_features(f_out.detach() , pids) #[:bs] [:bs]
-
+            self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             losses.update(loss.item())
             # print log
