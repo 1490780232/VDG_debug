@@ -36,7 +36,7 @@ from spcl.utils.faiss_rerank import compute_jaccard_distance
 start_epoch = best_mAP = 0
 
 def get_data(name, data_dir):
-    root = osp.join(data_dir, "market1501")
+    root = osp.join(data_dir, name)
     dataset = datasets.create(name, root)
     return dataset
 
@@ -70,7 +70,7 @@ def get_train_loader(args, dataset, height, width, batch_size, workers,
 
 
 def get_train_augloader(args, dataset, height, width, batch_size, workers,
-                    num_instances, iters, trainset=None, selected_set = None):
+                    num_instances, iters, trainset=None, selected_set = None, aug_path = None):
 
     normalizer = T.Normalize(mean=[0.5, 0.5, 0.5],
                              std= [0.5, 0.5, 0.5])
@@ -91,7 +91,7 @@ def get_train_augloader(args, dataset, height, width, batch_size, workers,
     else:
         sampler = None
     train_loader = IterLoader(
-                DataLoader(Preprocessor_aug2(train_set, root=dataset.images_dir, transform=train_transformer, selected_list=selected_set),
+                DataLoader(Preprocessor_aug2(train_set, root=dataset.images_dir, transform=train_transformer, selected_list=selected_set, aug_path = aug_path),
                             batch_size=batch_size, num_workers=workers, sampler=sampler,
                             shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)
     return train_loader
@@ -161,7 +161,7 @@ def create_model(args):
     model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0)
     # use CUDA
     model.cuda()
-    weights = torch.load("./pretrained/iteration_200000.pt")['state_dict']
+    weights = torch.load(args.pretrained)['state_dict']
     # print(type(weights['state_dict'])) #.keys()
     body_dict = collections.OrderedDict()
     for key in weights.keys():
@@ -207,7 +207,7 @@ def main_worker(args):
     print("==> Load unlabeled dataset")
     dataset = get_data(args.dataset, args.data_dir)
     test_loader = get_test_loader(dataset, args.height, args.width, 128, args.workers) #args.batch_size
-
+    aug_dir = args.aug_dir
     # Create model
     model = create_model(args)
     # Create hybrid memory
@@ -221,6 +221,8 @@ def main_worker(args):
     selection_th = args.reliability
     lambda_v = args.lambda_view
     start_epoch = args.start_epoch
+
+
     # features, _ = extract_features(model, cluster_loader, print_freq=50)
     # features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
     # # memory.features = F.normalize(features, dim=1).cuda()
@@ -229,7 +231,7 @@ def main_worker(args):
 
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,"./examples/data/market_train_fpn_final")
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,aug_dir)
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
     optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
@@ -509,7 +511,7 @@ def main_worker(args):
         print(pseudo_labels.shape, centroids.shape,len(pseudo_labels[pseudo_labels>-1]))
         train_loader = get_train_augloader(args, dataset, args.height, args.width,
                                             args.batch_size, args.workers, args.num_instances, iters,
-                                            trainset=pseudo_labeled_dataset, selected_set = select_augs)
+                                            trainset=pseudo_labeled_dataset, selected_set = select_augs, aug_path=aug_dir)
         train_loader.new_epoch()
         trainer.train(epoch, train_loader, optimizer,
                     print_freq=args.print_freq, train_iters=len(train_loader),percam_tempV = percam_tempV,  concate_intra_class = concate_intra_class)
@@ -591,4 +593,8 @@ if __name__ == '__main__':
                         default=osp.join(working_dir, 'data'))
     parser.add_argument('--logs-dir', type=str, metavar='PATH',
                         default=osp.join(working_dir, 'logs'))
+    parser.add_argument('--aug-dir', type=str, metavar='PATH',
+                        default=osp.join(working_dir, 'aug'))
+    parser.add_argument('--pretrained', type=str, metavar='PATH',
+                        default=osp.join(working_dir, 'pretrained'))
     main()
