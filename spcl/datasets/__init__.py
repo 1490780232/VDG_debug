@@ -18,7 +18,7 @@ __factory = {
     'vehicleid': VehicleID,
     'vehiclex': VehicleX,
     'Market_view':Market_view,
-    'DukeMTMCreID':DukeMTMCreID
+    'dukemtmcreid':DukeMTMCreID
 }
 
 

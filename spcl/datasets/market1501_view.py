@@ -26,7 +26,7 @@ class Market1501(BaseImageDataset):
         super(Market1501, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
         self.view_to_id = {'正面':0, '右侧面':1, '背面':2, '左侧面':3}
-        file = open(self.dataset_dir+"/market_attribute_all.json") #"/home/lzy/clustercontrast_test/market_attribute_all.json") #/home/lzy/Generate/re-id/00_inversion_person/encoder4editing/datasets/market_attribute_all.json")
+        file = open(self.dataset_dir+"/market_attribute_all.json")
         self.view_point_id = json.load(file)
         self.id_path = collections.defaultdict(list)
         self.train_dir = osp.join(self.dataset_dir, 'bounding_box_train')
