@@ -4,3 +4,6 @@
 
 CUDA_VISIBLE_DEVICES=3 python examples/vdg_train_usl_aug2_proxy_debug.py  -d Market_view --logs-dir logs/base_0.9reliability_update_all_0.1view_0epoch -b 64 --num-instance 8 --eps 0.6 --lr 0.00035 --epochs 50 --reliability 0.9 --lambda_view 0.1  --start_epoch 0
 CUDA_VISIBLE_DEVICES=3 python examples/vdg_train_usl_aug2_proxy_debug.py  -d Market_view --logs-dir logs/base_0.9reliability_update_all_0.1view_5epoch -b 64 --num-instance 8 --eps 0.6 --lr 0.00035 --epochs 50 --reliability 0.9 --lambda_view 0.1  --start_epoch 5
+
+
+CUDA_VISIBLE_DEVICES=3 python examples/vdg_train_usl_aug2_proxy_debug.py  -d dukemtmcreid --logs-dir logs/base_0.8reliability_duke_update_all -b 64 --num-instance 8 --eps 0.6 --lr 0.00035 --epochs 50 --reliability 0.8 --lambda_view 0.1  --start_epoch 100 --aug-dir /home/lzy/00_reid_models/VDG_debug/examples/data/duke_train_fpn_view_features_final --pretrained /home/lzy/00_reid_models/VDG_debug/pretrained/iteration_200000_duke.pt

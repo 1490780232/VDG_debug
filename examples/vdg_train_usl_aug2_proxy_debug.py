@@ -218,7 +218,7 @@ def main_worker(args):
     # Initialize target-domain instance features
     print("==> Initialize instance features in the hybrid memory")
     cluster_loader = get_cluster_loader(dataset, args.height, args.width,
-                                    args.batch_size, args.workers, testset=sorted(dataset.train))
+                                    128, args.workers, testset=sorted(dataset.train))
     selection_th = args.reliability
     lambda_v = args.lambda_view
     start_epoch = args.start_epoch
@@ -299,8 +299,8 @@ def main_worker(args):
             eps_loose = eps+args.eps_gap
             print('Clustering criterion: eps: {:.3f}, eps_tight: {:.3f}, eps_loose: {:.3f}'.format(eps, eps_tight, eps_loose))
             cluster = DBSCAN(eps=eps, min_samples=4, metric='precomputed', n_jobs=-1)
-            cluster_tight = DBSCAN(eps=eps_tight, min_samples=4, metric='precomputed', n_jobs=-1)
-            cluster_loose = DBSCAN(eps=eps_loose, min_samples=4, metric='precomputed', n_jobs=-1)
+            # cluster_tight = DBSCAN(eps=eps_tight, min_samples=4, metric='precomputed', n_jobs=-1)
+            # cluster_loose = DBSCAN(eps=eps_loose, min_samples=4, metric='precomputed', n_jobs=-1)
         elif (epoch==50):
             # DBSCAN cluster
             eps = 0.5
@@ -308,16 +308,16 @@ def main_worker(args):
             eps_loose = eps+args.eps_gap
             print('Clustering criterion: eps: {:.3f}, eps_tight: {:.3f}, eps_loose: {:.3f}'.format(eps, eps_tight, eps_loose))
             cluster = DBSCAN(eps=eps, min_samples=4, metric='precomputed', n_jobs=-1)
-            cluster_tight = DBSCAN(eps=eps_tight, min_samples=4, metric='precomputed', n_jobs=-1)
-            cluster_loose = DBSCAN(eps=eps_loose, min_samples=4, metric='precomputed', n_jobs=-1)
+            # cluster_tight = DBSCAN(eps=eps_tight, min_samples=4, metric='precomputed', n_jobs=-1)
+            # cluster_loose = DBSCAN(eps=eps_loose, min_samples=4, metric='precomputed', n_jobs=-1)
         
         # select & cluster images as training set of this epochs
         pseudo_labels = cluster.fit_predict(rerank_dist)
-        pseudo_labels_tight = cluster_tight.fit_predict(rerank_dist)
-        pseudo_labels_loose = cluster_loose.fit_predict(rerank_dist)
+        # pseudo_labels_tight = cluster_tight.fit_predict(rerank_dist)
+        # pseudo_labels_loose = cluster_loose.fit_predict(rerank_dist)
         num_ids = len(set(pseudo_labels)) - (1 if -1 in pseudo_labels else 0)
-        num_ids_tight = len(set(pseudo_labels_tight)) - (1 if -1 in pseudo_labels_tight else 0)
-        num_ids_loose = len(set(pseudo_labels_loose)) - (1 if -1 in pseudo_labels_loose else 0)
+        # num_ids_tight = len(set(pseudo_labels_tight)) - (1 if -1 in pseudo_labels_tight else 0)
+        # num_ids_loose = len(set(pseudo_labels_loose)) - (1 if -1 in pseudo_labels_loose else 0)
 
         # generate new dataset and calculate cluster centers
         def generate_pseudo_labels(cluster_id, num):
@@ -333,29 +333,29 @@ def main_worker(args):
             return torch.Tensor(labels).long()
 
         pseudo_labels = generate_pseudo_labels(pseudo_labels, num_ids)
-        pseudo_labels_tight = generate_pseudo_labels(pseudo_labels_tight, num_ids_tight)
-        pseudo_labels_loose = generate_pseudo_labels(pseudo_labels_loose, num_ids_loose)
+        # pseudo_labels_tight = generate_pseudo_labels(pseudo_labels_tight, num_ids_tight)
+        # pseudo_labels_loose = generate_pseudo_labels(pseudo_labels_loose, num_ids_loose)
         # compute R_indep and R_comp
         N = pseudo_labels.size(0)
-        label_sim = pseudo_labels.expand(N, N).eq(pseudo_labels.expand(N, N).t()).float()
-        label_sim_tight = pseudo_labels_tight.expand(N, N).eq(pseudo_labels_tight.expand(N, N).t()).float()
-        label_sim_loose = pseudo_labels_loose.expand(N, N).eq(pseudo_labels_loose.expand(N, N).t()).float()
-        R_comp = 1-torch.min(label_sim, label_sim_tight).sum(-1)/torch.max(label_sim, label_sim_tight).sum(-1)
-        R_indep = 1-torch.min(label_sim, label_sim_loose).sum(-1)/torch.max(label_sim, label_sim_loose).sum(-1)
-        assert((R_comp.min()>=0) and (R_comp.max()<=1))
-        assert((R_indep.min()>=0) and (R_indep.max()<=1))
-        cluster_R_comp, cluster_R_indep = collections.defaultdict(list), collections.defaultdict(list)
-        cluster_img_num = collections.defaultdict(int)
-        for i, (comp, indep, label) in enumerate(zip(R_comp, R_indep, pseudo_labels)):
-            cluster_R_comp[label.item()].append(comp.item())
-            cluster_R_indep[label.item()].append(indep.item())
-            cluster_img_num[label.item()]+=1
+        # label_sim = pseudo_labels.expand(N, N).eq(pseudo_labels.expand(N, N).t()).float()
+        # label_sim_tight = pseudo_labels_tight.expand(N, N).eq(pseudo_labels_tight.expand(N, N).t()).float()
+        # label_sim_loose = pseudo_labels_loose.expand(N, N).eq(pseudo_labels_loose.expand(N, N).t()).float()
+        # R_comp = 1-torch.min(label_sim, label_sim_tight).sum(-1)/torch.max(label_sim, label_sim_tight).sum(-1)
+        # R_indep = 1-torch.min(label_sim, label_sim_loose).sum(-1)/torch.max(label_sim, label_sim_loose).sum(-1)
+        # assert((R_comp.min()>=0) and (R_comp.max()<=1))
+        # assert((R_indep.min()>=0) and (R_indep.max()<=1))
+        # cluster_R_comp, cluster_R_indep = collections.defaultdict(list), collections.defaultdict(list)
+        # cluster_img_num = collections.defaultdict(int)
+        # for i, (comp, indep, label) in enumerate(zip(R_comp, R_indep, pseudo_labels)):
+        #     cluster_R_comp[label.item()].append(comp.item())
+        #     cluster_R_indep[label.item()].append(indep.item())
+        #     cluster_img_num[label.item()]+=1
 
-        cluster_R_comp = [min(cluster_R_comp[i]) for i in sorted(cluster_R_comp.keys())]
-        cluster_R_indep = [min(cluster_R_indep[i]) for i in sorted(cluster_R_indep.keys())]
-        cluster_R_indep_noins = [iou for iou, num in zip(cluster_R_indep, sorted(cluster_img_num.keys())) if cluster_img_num[num]>1]
-        if (epoch==0):
-            indep_thres = np.sort(cluster_R_indep_noins)[min(len(cluster_R_indep_noins)-1,np.round(len(cluster_R_indep_noins)*0.9).astype('int'))]
+        # cluster_R_comp = [min(cluster_R_comp[i]) for i in sorted(cluster_R_comp.keys())]
+        # cluster_R_indep = [min(cluster_R_indep[i]) for i in sorted(cluster_R_indep.keys())]
+        # cluster_R_indep_noins = [iou for iou, num in zip(cluster_R_indep, sorted(cluster_img_num.keys())) if cluster_img_num[num]>1]
+        # if (epoch==0):
+        #     indep_thres = np.sort(cluster_R_indep_noins)[min(len(cluster_R_indep_noins)-1,np.round(len(cluster_R_indep_noins)*0.9).astype('int'))]
 
         pseudo_labeled_dataset = []
         outliers = 0
