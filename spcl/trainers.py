@@ -309,11 +309,8 @@ class VDGTrainer_USL_view(object):
             loss.backward()
             optimizer.step()
             self._updata_features(f_out.detach()[:bs], pids[:bs]) #
-            # self._updata_features(f_out.detach()[:bs], pids[:bs]) #
             self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
-            # self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             losses.update(loss.item())
-            # print log
             batch_time.update(time.time() - end)
             end = time.time()
             if (i + 1) % print_freq == 0:
@@ -343,13 +340,6 @@ class VDGTrainer_USL_view(object):
         for x, y in zip(inputs, targets):
             self.features[y] = momentum * self.features[y] + (1. - momentum) * x
             self.features[y] /= self.features[y].norm()
-        # for x, y in zip(inputs, targets):
-        #     self.features[y] = momentum * self.features[y] + (1. - momentum) * x
-        #     self.features[y] /= self.features[y].norm()
-            # self.features[y] = momentum * self.features[y] + (1. - momentum) * x
-            # self.features[y] /= self.features[y].norm()
-
-
     def _update_proxy(self, inputs, targets, views):
         momentum = torch.Tensor([self.momentum]).to(inputs.device)
         for x, y,v in zip(inputs, targets, views):
@@ -358,9 +348,3 @@ class VDGTrainer_USL_view(object):
         for x, y,v in zip(inputs, targets, views):
             self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
             self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
-    
-            # print(self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]],"after")
-        # for x, y,v in zip(inputs, targets, views):
-        #     self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
-        #     self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
-            # print(self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]],"after")
