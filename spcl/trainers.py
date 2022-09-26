@@ -238,7 +238,7 @@ class VDGTrainer_USL_view(object):
         self.encoder = encoder
         self.memory = memory
         self.features = None
-        self.momentum = 0.4
+        self.momentum = 0.2
         self.labels =None
         self.temp = 0.05
         self.ce = nn.CrossEntropyLoss()

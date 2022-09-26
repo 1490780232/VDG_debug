@@ -8,8 +8,8 @@ __all__ = ['ResNet', 'resnet50_ibn_a', 'resnet101_ibn_a']
 
 
 model_urls = {
-    'ibn_resnet50a': './logs/pretrained/resnet50_ibn_a.pth.tar',
-    'ibn_resnet101a': './logs/pretrained/resnet101_ibn_a.pth.tar',
+    'ibn_resnet50a': './pretrained/resnet50_ibn_a.pth.tar',
+    'ibn_resnet101a': './pretrained/resnet101_ibn_a.pth.tar',
 }
 
 
