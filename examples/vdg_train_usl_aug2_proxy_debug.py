@@ -240,7 +240,7 @@ def main_worker(args):
 
     # Trainer
     trainer = VDGTrainer_USL_view(model, memory, lambda_v, start_epoch) #SpCLTrainer_USL(model, memory)
-    mAP = evaluator.evaluate(test_loader, dataset.query, dataset.gallery, cmc_flag=True)
+    # mAP = evaluator.evaluate(test_loader, dataset.query, dataset.gallery, cmc_flag=True)
     for epoch in range(args.epochs):
         # Calculate distance
         print('==> Create pseudo labels for unlabeled data with self-paced policy')

@@ -1,6 +1,8 @@
 examples/data
 market_train_fpn_final/
-
+*.zip
+examples/data.zip
+pretrained.zip
 *~
 logs/*
 scripts/*
