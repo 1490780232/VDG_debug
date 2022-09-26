@@ -2,11 +2,9 @@ from __future__ import print_function, absolute_import
 import time
 import numpy as np
 import collections
-
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-
 from .utils.meters import AverageMeter
 
 
@@ -240,7 +238,7 @@ class VDGTrainer_USL_view(object):
         self.encoder = encoder
         self.memory = memory
         self.features = None
-        self.momentum = 0.2
+        self.momentum = 0.4
         self.labels =None
         self.temp = 0.05
         self.ce = nn.CrossEntropyLoss()
@@ -289,8 +287,6 @@ class VDGTrainer_USL_view(object):
                 for cc in torch.unique(views):
                     inds = torch.nonzero(views == cc).squeeze(-1)
                     percam_targets = pids[inds]
-                    # print(percam_targets)
-                    # print(cc)
                     percam_feat = f_out[inds]
                     associate_loss = 0
                     target_inputs = torch.matmul(F.normalize(percam_feat), F.normalize(percam_tempV.t().clone()))
@@ -312,10 +308,10 @@ class VDGTrainer_USL_view(object):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            self._updata_features(f_out.detach() , pids) #[:bs][:bs]
-            # self._updata_features(f_out.detach()[:bs] , pids[:bs]) #
+            self._updata_features(f_out.detach()[:bs], pids[:bs]) #
+            # self._updata_features(f_out.detach()[:bs], pids[:bs]) #
             self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
-            self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
+            # self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             losses.update(loss.item())
             # print log
             batch_time.update(time.time() - end)
@@ -344,6 +340,14 @@ class VDGTrainer_USL_view(object):
         for x, y in zip(inputs, targets):
             self.features[y] = momentum * self.features[y] + (1. - momentum) * x
             self.features[y] /= self.features[y].norm()
+        for x, y in zip(inputs, targets):
+            self.features[y] = momentum * self.features[y] + (1. - momentum) * x
+            self.features[y] /= self.features[y].norm()
+        # for x, y in zip(inputs, targets):
+        #     self.features[y] = momentum * self.features[y] + (1. - momentum) * x
+        #     self.features[y] /= self.features[y].norm()
+            # self.features[y] = momentum * self.features[y] + (1. - momentum) * x
+            # self.features[y] /= self.features[y].norm()
 
 
     def _update_proxy(self, inputs, targets, views):
@@ -351,4 +355,12 @@ class VDGTrainer_USL_view(object):
         for x, y,v in zip(inputs, targets, views):
             self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
             self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
+        for x, y,v in zip(inputs, targets, views):
+            self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
+            self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
+    
+            # print(self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]],"after")
+        # for x, y,v in zip(inputs, targets, views):
+        #     self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
+        #     self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
             # print(self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]],"after")

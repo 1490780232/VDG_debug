@@ -51,7 +51,7 @@ def get_train_loader(args, dataset, height, width, batch_size, workers,
              T.RandomCrop((height, width)),
              T.ToTensor(),
              normalizer,
-	         T.RandomErasing(probability=0.5, mean=[0.485, 0.456, 0.406])
+             T.RandomErasin g(probability=0.5, mean=[0.485, 0.456, 0.406])
          ])
 
     train_set = sorted(dataset.train) if trainset is None else sorted(trainset)
