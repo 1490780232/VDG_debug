@@ -11,7 +11,7 @@ from .market1501_view import Market1501 as Market_view
 from .dukemtmcreid import DukeMTMCreID
 
 __factory = {
-    'market1501': Market1501,
+    'market1501': Market_view,
     'msmt17': MSMT17,
     'personx': PersonX,
     'veri': VeRi,

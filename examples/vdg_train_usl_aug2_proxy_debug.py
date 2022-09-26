@@ -158,7 +158,7 @@ def get_augset_loader(dataset, height, width, batch_size, workers, augpath=None)
     return test_loader
 
 def create_model(args):
-    model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0)
+    model = models.create(args.arch, num_features=args.features, norm=True, dropout=args.dropout, num_classes=0, gem = args.gem)
     # use CUDA
     model.cuda()
     weights = torch.load(args.pretrained)['state_dict']
@@ -584,6 +584,7 @@ if __name__ == '__main__':
     parser.add_argument('--step-size', type=int, default=20)
     # training configs
     parser.add_argument('--seed', type=int, default=1)
+    parser.add_argument('--gem', action="store_true")
     parser.add_argument('--print-freq', type=int, default=10)
     parser.add_argument('--eval-step', type=int, default=1)
     parser.add_argument('--temp', type=float, default=0.05,

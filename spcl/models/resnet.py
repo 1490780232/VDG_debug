@@ -68,7 +68,7 @@ class ResNet(nn.Module):
     }
 
     def __init__(self, depth, pretrained=True, cut_at_pooling=False,
-                 num_features=0, norm=False, dropout=0, num_classes=0):
+                 num_features=0, norm=False, dropout=0, num_classes=0, gem=False):
         super(ResNet, self).__init__()
         self.pretrained = pretrained
         self.depth = depth
@@ -82,8 +82,11 @@ class ResNet(nn.Module):
         self.base = nn.Sequential(
             resnet.conv1, resnet.bn1, resnet.relu, resnet.maxpool,
             resnet.layer1, resnet.layer2, resnet.layer3, resnet.layer4)
-        self.gap = nn.AdaptiveAvgPool2d(1)
-        # self.gap =  GeneralizedMeanPoolingP()#nn.AdaptiveAvgPool2d(1)
+        if gem:
+            self.gap =  GeneralizedMeanPoolingP()#nn.AdaptiveAvgPool2d(1)
+            print("using gem pooling type")
+        else:
+            self.gap = nn.AdaptiveAvgPool2d(1)
 
         if not self.cut_at_pooling:
             self.num_features = num_features
