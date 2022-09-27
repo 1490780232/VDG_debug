@@ -43,8 +43,8 @@ def get_data(name, data_dir):
 def get_train_loader(args, dataset, height, width, batch_size, workers,
                     num_instances, iters, trainset=None):
 
-    normalizer = T.Normalize(mean=[0.485, 0.456, 0.406],
-                             std= [0.229, 0.224, 0.225])
+    normalizer = T.Normalize(mean=[0.5, 0.5, 0.5],
+                             std= [0.5, 0.5, 0.5])
     train_transformer = T.Compose([
              T.Resize((height, width), interpolation=3),
              T.RandomHorizontalFlip(p=0.5),
@@ -72,8 +72,8 @@ def get_train_loader(args, dataset, height, width, batch_size, workers,
 def get_train_augloader(args, dataset, height, width, batch_size, workers,
                     num_instances, iters, trainset=None, selected_set = None, aug_path = None):
 
-    normalizer = T.Normalize(mean=[0.485, 0.456, 0.406],
-                             std= [0.229, 0.224, 0.225])
+    normalizer = T.Normalize(mean=[0.5, 0.5, 0.5],
+                             std= [0.5, 0.5, 0.5])
     train_transformer = T.Compose([
              T.Resize((height, width), interpolation=3),
              T.RandomHorizontalFlip(p=0.5),
@@ -98,8 +98,8 @@ def get_train_augloader(args, dataset, height, width, batch_size, workers,
 
 
 def get_test_loader(dataset, height, width, batch_size, workers, testset=None): 
-    normalizer = T.Normalize(mean=[0.485, 0.456, 0.406],
-                             std= [0.229, 0.224, 0.225])
+    normalizer = T.Normalize(mean=[0.5, 0.5, 0.5],
+                             std= [0.5, 0.5, 0.5])
 
     test_transformer = T.Compose([
              T.Resize((height, width), interpolation=3),
@@ -120,8 +120,8 @@ def get_test_loader(dataset, height, width, batch_size, workers, testset=None):
 
 
 def get_cluster_loader(dataset, height, width, batch_size, workers, testset=None): 
-    normalizer = T.Normalize(mean=[0.485, 0.456, 0.406],
-                             std= [0.229, 0.224, 0.225])
+    normalizer = T.Normalize(mean=[0.5, 0.5, 0.5],
+                             std= [0.5, 0.5, 0.5])
 
     test_transformer = T.Compose([
              T.Resize((height, width), interpolation=3),
@@ -139,8 +139,8 @@ def get_cluster_loader(dataset, height, width, batch_size, workers, testset=None
 
     return test_loader
 def get_augset_loader(dataset, height, width, batch_size, workers, augpath=None):
-    normalizer = T.Normalize(mean=[0.485, 0.456, 0.406],
-                             std= [0.229, 0.224, 0.225])
+    normalizer = T.Normalize(mean=[0.5, 0.5, 0.5],
+                             std= [0.5, 0.5, 0.5])
     test_transformer = T.Compose([
         T.Resize((height, width), interpolation=3),
         T.ToTensor(),

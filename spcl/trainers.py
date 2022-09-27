@@ -291,7 +291,7 @@ class VDGTrainer_USL_view(object):
                     associate_loss = 0
                     target_inputs = torch.matmul(F.normalize(percam_feat), F.normalize(percam_tempV.t().clone()))
                     temp_sims = target_inputs.detach().clone()
-                    target_inputs /= 0.07 
+                    target_inputs /= 0.07
                     for k in range(len(percam_feat)):
                         ori_asso_ind = torch.nonzero(concate_intra_class == percam_targets[k]).squeeze(-1)
                         temp_sims[k, ori_asso_ind] = -10000.0  #mask out positive
@@ -304,11 +304,12 @@ class VDGTrainer_USL_view(object):
                                 F.log_softmax(concated_input.unsqueeze(0), dim=1) * concated_target.unsqueeze(
                             0)).sum()
                     loss_view += self.lambda_v * associate_loss / len(percam_feat)
+                    # print(loss_view)
             loss = loss_memory + loss_view
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            self._updata_features(f_out.detach()[:bs], pids[:bs]) #
+            self._updata_features(f_out.detach(), pids) #[:bs] [:bs]
             # self._updata_features(f_out.detach()[:bs], pids[:bs]) #
             self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             # self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
@@ -340,9 +341,9 @@ class VDGTrainer_USL_view(object):
         for x, y in zip(inputs, targets):
             self.features[y] = momentum * self.features[y] + (1. - momentum) * x
             self.features[y] /= self.features[y].norm()
-        for x, y in zip(inputs, targets):
-            self.features[y] = momentum * self.features[y] + (1. - momentum) * x
-            self.features[y] /= self.features[y].norm()
+        # for x, y in zip(inputs, targets):
+            # self.features[y] = momentum * self.features[y] + (1. - momentum) * x
+            # self.features[y] /= self.features[y].norm()
         # for x, y in zip(inputs, targets):
         #     self.features[y] = momentum * self.features[y] + (1. - momentum) * x
         #     self.features[y] /= self.features[y].norm()
