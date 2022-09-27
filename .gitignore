@@ -1,6 +1,6 @@
 examples/data
 market_train_fpn_final/
-
+logs
 *~
 logs/*
 scripts/*
