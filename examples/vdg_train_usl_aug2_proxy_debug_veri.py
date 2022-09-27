@@ -28,7 +28,7 @@ from spcl.utils.data import IterLoader
 from spcl.utils.data import transforms as T
 from spcl.utils.data.sampler import RandomMultipleGallerySampler
 # from spcl.utils.data.preprocessor import Preprocessor
-from spcl.utils.data.preprocessor import Preprocessor,Preprocessor_aug, Preprocessor_aug2, Preprocessor2
+from spcl.utils.data.preprocessor import Preprocessor,Preprocessor_aug, Preprocessor_aug2, Preprocessor2, Preprocessor_aug2_veri
 from spcl.utils.logging import Logger
 from spcl.utils.serialization import load_checkpoint, save_checkpoint, copy_state_dict
 from spcl.utils.faiss_rerank import compute_jaccard_distance
@@ -62,11 +62,10 @@ def get_train_loader(args, dataset, height, width, batch_size, workers,
     else:
         sampler = None
     train_loader = IterLoader(
-                DataLoader(Preprocessor_aug2(train_set, root=dataset.images_dir, transform=train_transformer),
+                DataLoader(Preprocessor_aug2_veri(train_set, root=dataset.images_dir, transform=train_transformer),
                             batch_size=batch_size, num_workers=workers, sampler=sampler,
                             shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)
     return train_loader
-
 
 
 def get_train_augloader(args, dataset, height, width, batch_size, workers,
