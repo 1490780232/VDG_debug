@@ -1,13 +1,10 @@
 examples/data
 market_train_fpn_final/
-<<<<<<< HEAD
-logs
-=======
 *.zip
 examples/data.zip
 pretrained.zip
->>>>>>> 292db97905adbd887fc3c41b3e7da343b701a554
 *~
+logs
 logs/*
 scripts/*
 logs2/
