@@ -308,7 +308,7 @@ class VDGTrainer_USL_view(object):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            self._updata_features(f_out.detach()[:bs], pids[:bs]) #
+            self._updata_features(f_out.detach(), pids) #[:bs][:bs]
             self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             losses.update(loss.item())
             batch_time.update(time.time() - end)
@@ -337,9 +337,9 @@ class VDGTrainer_USL_view(object):
         for x, y in zip(inputs, targets):
             self.features[y] = momentum * self.features[y] + (1. - momentum) * x
             self.features[y] /= self.features[y].norm()
-        for x, y in zip(inputs, targets):
-            self.features[y] = momentum * self.features[y] + (1. - momentum) * x
-            self.features[y] /= self.features[y].norm()
+        # for x, y in zip(inputs, targets):
+        #     self.features[y] = momentum * self.features[y] + (1. - momentum) * x
+        #     self.features[y] /= self.features[y].norm()
     def _update_proxy(self, inputs, targets, views):
         momentum = torch.Tensor([self.momentum]).to(inputs.device)
         for x, y,v in zip(inputs, targets, views):

@@ -33,8 +33,8 @@ for i in range(0, 10):
     try:
         response = client.upload_file(
         Bucket='data-1257243463',
-        Key='market_train_fpn_view_features_final.zip',
-        LocalFilePath='/home/lzy/Generate/re-id/00_inversion_person/encoder4editing/generate_images/market_train_fpn_view_features_final.zip',)
+        Key='veri_train_fpn_view_features_final.zip',
+        LocalFilePath='/home/lzy/Generate/re-id/00_inversion_person/encoder4editing_veri/generated_images/veri_train_fpn_view_features_final.zip',)
         break
     except CosClientError or CosServiceError as e:
         print(e)

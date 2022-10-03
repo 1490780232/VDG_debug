@@ -5,6 +5,7 @@ examples/data.zip
 pretrained.zip
 *~
 logs/*
+logs
 scripts/*
 logs2/
 *.json
@@ -20,7 +21,7 @@ pretrained/
 
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
-#/media/backup/experiment/VDG_DEBUG/logs2/logs
+#
 
 *.DS_Store
 .AppleDouble
