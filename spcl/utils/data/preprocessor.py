@@ -131,3 +131,69 @@ class Preprocessor_aug2(Dataset):
         viewid = self.id_tranform[viewid]
         view_aug = self.id_tranform[view_aug]
         return [img, img_aug], fname, pid, [viewid, view_aug], index
+
+class Preprocessor2_veri(Dataset):
+    def __init__(self, dataset, root=None, transform=None):
+        super(Preprocessor2_veri, self).__init__()
+        self.dataset = dataset
+        self.root = root
+        self.transform = transform
+        self.id_tranform = {0:0, 1:1, 2:1, 3:1, 4:2, 5:2,6:2,7:3}   #,4:2,5:3,6:3,7:4
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, indices):
+        return self._get_single_item(indices)
+
+    def _get_single_item(self, index):
+        fname, pid, viewid, camid = self.dataset[index]
+        fpath = fname
+        if self.root is not None:
+            fpath = osp.join(self.root, fname)
+
+        img = Image.open(fpath).convert('RGB')
+
+        if self.transform is not None:
+            img = self.transform(img)
+
+        return img, fname, pid, self.id_tranform[viewid], camid, index
+
+class Preprocessor_aug2_veri(Dataset):
+    def __init__(self, dataset, root=None, transform=None, selected_list = None,aug_path = None):
+        super(Preprocessor_aug2_veri, self).__init__()
+        self.dataset = dataset
+        self.root = root
+        self.transform = transform
+        self.select_list = selected_list
+        # self.id_tranform = {0:0, 1:1, 2:1, 5:3,6:3,7:4}   #,4:2,5:3,6:3,7:4
+        self.id_tranform = {0:0, 1:1, 2:1, 3:1, 4:2, 5:2,6:2,7:3}   #,4:2,5:3,6:3,7:4
+
+        
+        self.aug_dir = aug_path
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, indices):
+        return self._get_single_item(indices)
+
+    def _get_single_item(self, index):
+        fname, pid, viewid, camid,  = self.dataset[index]
+        fpath = fname
+        if self.root is not None:
+            fpath = osp.join(self.root, fname)
+        if fpath in self.select_list.keys():
+            aug_path = random.choice(self.select_list[fpath])
+            aug_path = os.path.join(self.aug_dir, aug_path)
+            view_aug = int(aug_path[-5:-4])
+        else:
+            aug_path = fpath 
+            view_aug =  viewid
+        img = Image.open(fpath).convert('RGB')
+        img_aug = Image.open(aug_path).convert('RGB')
+        if self.transform is not None:
+            img = self.transform(img)
+            img_aug = self.transform(img_aug)
+        viewid = self.id_tranform[viewid]
+        view_aug = self.id_tranform[view_aug]
+        return [img, img_aug], fname, pid, [viewid, view_aug], index

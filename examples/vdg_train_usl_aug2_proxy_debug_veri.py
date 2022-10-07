@@ -28,7 +28,7 @@ from spcl.utils.data import IterLoader
 from spcl.utils.data import transforms as T
 from spcl.utils.data.sampler import RandomMultipleGallerySampler
 # from spcl.utils.data.preprocessor import Preprocessor
-from spcl.utils.data.preprocessor import Preprocessor,Preprocessor_aug, Preprocessor_aug2, Preprocessor2
+from spcl.utils.data.preprocessor import Preprocessor,Preprocessor_aug, Preprocessor_aug2, Preprocessor2, Preprocessor_aug2_veri,Preprocessor2_veri
 from spcl.utils.logging import Logger
 from spcl.utils.serialization import load_checkpoint, save_checkpoint, copy_state_dict
 from spcl.utils.faiss_rerank import compute_jaccard_distance
@@ -62,11 +62,10 @@ def get_train_loader(args, dataset, height, width, batch_size, workers,
     else:
         sampler = None
     train_loader = IterLoader(
-                DataLoader(Preprocessor_aug2(train_set, root=dataset.images_dir, transform=train_transformer),
+                DataLoader(Preprocessor_aug2_veri(train_set, root=dataset.images_dir, transform=train_transformer),
                             batch_size=batch_size, num_workers=workers, sampler=sampler,
                             shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)
     return train_loader
-
 
 
 def get_train_augloader(args, dataset, height, width, batch_size, workers,
@@ -91,7 +90,7 @@ def get_train_augloader(args, dataset, height, width, batch_size, workers,
     else:
         sampler = None
     train_loader = IterLoader(
-                DataLoader(Preprocessor_aug2(train_set, root=dataset.images_dir, transform=train_transformer, selected_list=selected_set, aug_path = aug_path),
+                DataLoader(Preprocessor_aug2_veri(train_set, root=dataset.images_dir, transform=train_transformer, selected_list=selected_set, aug_path = aug_path),
                             batch_size=batch_size, num_workers=workers, sampler=sampler,
                             shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)
     return train_loader
@@ -133,7 +132,7 @@ def get_cluster_loader(dataset, height, width, batch_size, workers, testset=None
         testset = list(set(dataset.query) | set(dataset.gallery))
 
     test_loader = DataLoader(
-        Preprocessor2(testset, root=dataset.images_dir, transform=test_transformer),
+        Preprocessor2_veri(testset, root=dataset.images_dir, transform=test_transformer),
         batch_size=batch_size, num_workers=workers,
         shuffle=False, pin_memory=True)
 
@@ -206,7 +205,7 @@ def main_worker(args):
     iters = args.iters if (args.iters>0) else None
     print("==> Load unlabeled dataset")
     dataset = get_data(args.dataset, args.data_dir)
-    test_loader = get_test_loader(dataset, args.height, args.width, 128, args.workers) #args.batch_size
+    test_loader = get_test_loader(dataset, args.height, args.width, 256, args.workers) #args.batch_size
     aug_dir = args.aug_dir
     # Create model
     model = create_model(args)
@@ -217,7 +216,7 @@ def main_worker(args):
     # Initialize target-domain instance features
     print("==> Initialize instance features in the hybrid memory")
     cluster_loader = get_cluster_loader(dataset, args.height, args.width,
-                                    128, args.workers, testset=sorted(dataset.train))
+                                    256, args.workers, testset=sorted(dataset.train))
     selection_th = args.reliability
     lambda_v = args.lambda_view
     start_epoch = args.start_epoch
@@ -231,7 +230,7 @@ def main_worker(args):
 
     # Evaluator
     evaluator = Evaluator(model)
-    aug_loader = get_augset_loader(dataset,  args.height, args.width, 128, args.workers,aug_dir)
+    aug_loader = get_augset_loader(dataset,  args.height, args.width, 512, args.workers,aug_dir)
     # Optimizer
     params = [{"params": [value]} for _, value in model.named_parameters() if value.requires_grad]
     optimizer = torch.optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
@@ -261,7 +260,7 @@ def main_worker(args):
                 #     features[f] = torch.cat([features[f], features[f]])
                 #     continue
                 # for aug_img in view_point_id[key]:
-                for key in range(4): 
+                for key in [0,1,2,5,6,7]: 
                     aug_feature = features_aug[f.split("/")[-1][:-4]+"_view"+str(key)+".jpg"]
                     scores = torch.matmul(features[f], aug_feature.T)
                     select_augs_2[f].append(f.split("/")[-1][:-4]+"_view"+str(key)+".jpg"+str(scores))
@@ -523,7 +522,7 @@ def main_worker(args):
                 'state_dict': model.state_dict(),
                 'epoch': epoch + 1,
                 'best_mAP': best_mAP,
-            }, is_best, fpath=osp.join(args.logs_dir, 'checkpoint.pth.tar'))
+            }, is_best, fpath=osp.join(args.logs_dir, 'checkpoint'+str(epoch)+'.pth.tar'))
 
             print('\n * Finished epoch {:3d}  model mAP: {:5.1%}  best: {:5.1%}{}\n'.
                   format(epoch, mAP, best_mAP, ' *' if is_best else ''))

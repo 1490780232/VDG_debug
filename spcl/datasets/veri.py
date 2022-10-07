@@ -5,7 +5,7 @@ from __future__ import print_function
 import glob
 import re
 import os.path as osp
-
+import json
 from ..utils.data import BaseImageDataset
 
 
@@ -27,10 +27,12 @@ class VeRi(BaseImageDataset):
         self.train_dir = osp.join(self.dataset_dir, 'image_train')
         self.query_dir = osp.join(self.dataset_dir, 'image_query')
         self.gallery_dir = osp.join(self.dataset_dir, 'image_test')
-
+        file = open(self.dataset_dir+"/veri_viewpoint.json")
+        # file = open("/root/cluster-contrast-reid/msmt17_attribute.json")
+        self.view_point_id = json.load(file)
         self.check_before_run()
 
-        train = self.process_dir(self.train_dir, relabel=True)
+        train = self._process_dir_train(self.train_dir, relabel=True)
         query = self.process_dir(self.query_dir, relabel=False)
         gallery = self.process_dir(self.gallery_dir, relabel=False)
 
@@ -42,7 +44,7 @@ class VeRi(BaseImageDataset):
         self.query = query
         self.gallery = gallery
 
-        self.num_train_pids, self.num_train_imgs, self.num_train_cams = self.get_imagedata_info(self.train)
+        self.num_train_pids, self.num_train_imgs, self.num_train_cams = self.get_imagedata_info_train(self.train)
         self.num_query_pids, self.num_query_imgs, self.num_query_cams = self.get_imagedata_info(self.query)
         self.num_gallery_pids, self.num_gallery_imgs, self.num_gallery_cams = self.get_imagedata_info(self.gallery)
 
@@ -82,3 +84,58 @@ class VeRi(BaseImageDataset):
             dataset.append((img_path, pid, camid))
 
         return dataset
+
+
+    def _process_dir_train(self, dir_path, relabel=False):
+        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
+        pattern = re.compile(r'([-\d]+)_c([-\d]+)')
+
+        pid_container = set()
+        for img_path in img_paths:
+            pid, _ = map(int, pattern.search(img_path).groups())
+            if pid == -1:
+                continue  # junk images are just ignored
+            pid_container.add(pid)
+        pid2label = {pid: label for label, pid in enumerate(pid_container)}
+
+        dataset = []
+        for img_path in img_paths:
+            pid, camid = map(int, pattern.search(img_path).groups())
+            if pid == -1:
+                continue  # junk images are just ignored
+            assert 0 <= pid <= 776  # pid == 0 means background
+            assert 1 <= camid <= 20
+            camid -= 1  # index starts from 0
+            if relabel:
+                pid = pid2label[pid]
+            try:
+                dataset.append((img_path, pid, self.view_point_id[img_path.split('/')[-1]], camid))
+            except:
+                continue
+        return dataset
+
+        # img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
+        # pattern = re.compile(r'([-\d]+)_c(\d+)')
+        # pid_container = set()
+        # for img_path in img_paths:
+        #     pid, _ = map(int, pattern.search(img_path).groups())
+        #     if pid == -1:
+        #         continue  # junk images are just ignored
+        #     pid_container.add(pid)
+        # pid2label = {pid: label for label, pid in enumerate(pid_container)}
+        # dataset = []
+        # for img_path in img_paths:
+        #     pid, camid = map(int, pattern.search(img_path).groups())
+        #     if pid == -1:
+        #         continue  # junk images are just ignored
+        #     assert 1 <= camid <= 15
+        #     camid -= 1  # index starts from 0
+        #     if relabel:
+        #         pid = pid2label[pid]
+        #     # dataset.append((img_path, pid, camid))
+        #     self.id_path[pid].append((img_path, pid, camid,self.view_to_id[self.view_point_id[img_path.split('/')[-1]]]))
+        #     # print((img_path, pid, camid,self.view_to_id[self.view_point_id[img_path.split('/')[-1]]]))
+        #     dataset.append((img_path, pid,self.view_to_id[self.view_point_id[img_path.split('/')[-1]]], camid)) #
+        #     # dataset.append((img_path, pid,  self.view_to_id[self.view_point_id[img_path.split('/')[-1]]['orientation']], camid)) #
+
+        

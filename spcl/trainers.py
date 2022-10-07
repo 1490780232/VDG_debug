@@ -291,7 +291,7 @@ class VDGTrainer_USL_view(object):
                     associate_loss = 0
                     target_inputs = torch.matmul(F.normalize(percam_feat), F.normalize(percam_tempV.t().clone()))
                     temp_sims = target_inputs.detach().clone()
-                    target_inputs /= 0.07 
+                    target_inputs /= 0.07
                     for k in range(len(percam_feat)):
                         ori_asso_ind = torch.nonzero(concate_intra_class == percam_targets[k]).squeeze(-1)
                         temp_sims[k, ori_asso_ind] = -10000.0  #mask out positive
@@ -304,13 +304,16 @@ class VDGTrainer_USL_view(object):
                                 F.log_softmax(concated_input.unsqueeze(0), dim=1) * concated_target.unsqueeze(
                             0)).sum()
                     loss_view += self.lambda_v * associate_loss / len(percam_feat)
+                    # print(loss_view)
             loss = loss_memory + loss_view
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             self._updata_features(f_out.detach(), pids) #[:bs][:bs]
             self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
+            # self._update_proxy(f_out.detach()[:bs] , pids[:bs], views[:bs])
             losses.update(loss.item())
+            # print log
             batch_time.update(time.time() - end)
             end = time.time()
             if (i + 1) % print_freq == 0:
@@ -326,10 +329,8 @@ class VDGTrainer_USL_view(object):
         imgs, _, pids, views, indexes = inputs
         return [imgs[0].cuda(), imgs[1].cuda()], pids.cuda(), [views[0].cuda(),views[1].cuda()],indexes.cuda()
         # return imgs[0].cuda(), pids.cuda(), indexes.cuda()
-
     def _forward(self, inputs):
         return self.encoder(inputs)
-
     def _updata_features(self, inputs, targets):
         momentum = torch.Tensor([self.momentum]).to(inputs.device)
         # inputs = torch.mean(torch.stack(inputs, dim=0), dim=0)
@@ -348,3 +349,8 @@ class VDGTrainer_USL_view(object):
         for x, y,v in zip(inputs, targets, views):
             self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
             self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
+            # print(self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]],"after")
+        # for x, y,v in zip(inputs, targets, views):
+        #     self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] = momentum * self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] + (1. - momentum) * x
+        #     self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]] /= self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]].norm()
+            # print(self.view_proxy[v][self.view_label_mapper[v][y.cpu().item()]],"after")
