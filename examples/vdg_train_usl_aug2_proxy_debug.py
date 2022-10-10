@@ -299,15 +299,15 @@ def main_worker(args):
             cluster = DBSCAN(eps=eps, min_samples=4, metric='precomputed', n_jobs=-1)
             # cluster_tight = DBSCAN(eps=eps_tight, min_samples=4, metric='precomputed', n_jobs=-1)
             # cluster_loose = DBSCAN(eps=eps_loose, min_samples=4, metric='precomputed', n_jobs=-1)
-        elif (epoch==50):
-            # DBSCAN cluster
-            eps = 0.5
-            eps_tight = eps-args.eps_gap
-            eps_loose = eps+args.eps_gap
-            print('Clustering criterion: eps: {:.3f}, eps_tight: {:.3f}, eps_loose: {:.3f}'.format(eps, eps_tight, eps_loose))
-            cluster = DBSCAN(eps=eps, min_samples=4, metric='precomputed', n_jobs=-1)
-            # cluster_tight = DBSCAN(eps=eps_tight, min_samples=4, metric='precomputed', n_jobs=-1)
-            # cluster_loose = DBSCAN(eps=eps_loose, min_samples=4, metric='precomputed', n_jobs=-1)
+        # elif (epoch==50):
+        #     # DBSCAN cluster
+        #     eps = 0.5
+        #     eps_tight = eps-args.eps_gap
+        #     eps_loose = eps+args.eps_gap
+        #     print('Clustering criterion: eps: {:.3f}, eps_tight: {:.3f}, eps_loose: {:.3f}'.format(eps, eps_tight, eps_loose))
+        #     cluster = DBSCAN(eps=eps, min_samples=4, metric='precomputed', n_jobs=-1)
+        #     # cluster_tight = DBSCAN(eps=eps_tight, min_samples=4, metric='precomputed', n_jobs=-1)
+        #     # cluster_loose = DBSCAN(eps=eps_loose, min_samples=4, metric='precomputed', n_jobs=-1)
         
         # select & cluster images as training set of this epochs
         pseudo_labels = cluster.fit_predict(rerank_dist)
